@@ -1,8 +1,9 @@
 from copy import copy
 
-import _patch_widget
 import numpy as np
 import pytest
+
+from src.napari_patchcreator import _patch_widget
 
 
 @pytest.fixture
