@@ -4,10 +4,10 @@
 [![PyPI](https://img.shields.io/pypi/v/napari-patchcreator.svg?color=green)](https://pypi.org/project/napari-patchcreator)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-patchcreator.svg?color=green)](https://python.org)
 [![tests](https://github.com/juglab/napari-patchcreator/workflows/tests/badge.svg)](https://github.com/juglab/napari-patchcreator/actions)
-[![codecov](https://codecov.io/gh/juglab/napari-patchcreator/branch/main/graph/badge.svg)](https://codecov.io/gh/juglab/napari-patchcreator)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-patchcreator)](https://napari-hub.org/plugins/napari-patchcreator)
 
-A simple plugin to use with napari
+A simple plugin to create quadratic patches from images through selection and clicking with the left mouse button.
+The patches can then be exported to a folder of your own choosing.
 
 ----------------------------------
 
