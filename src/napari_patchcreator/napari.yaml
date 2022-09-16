@@ -8,3 +8,4 @@ contributions:
   widgets:
     - command: napari-patchcreator.make_patch_widget
       display_name: Patch creation
+      autogenerate: true

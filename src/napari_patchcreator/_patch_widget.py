@@ -27,7 +27,7 @@ from magicgui import magicgui
         "mode": "d",
         "label": "Export path",
     },
-    auto_call=False,
+    auto_call=True,
 )
 def patch_creation(
     img_layer: "napari.layers.Image",
@@ -36,25 +36,34 @@ def patch_creation(
     store_path: str = None,
 ):
     viewer = napari.current_viewer()
-    selection_layer = viewer.layers["2dselection"]
-    shapes = selection_layer.data
-    patches = [
-        slice_img_patch(
-            patch_creation.img_layer.value.data,
-            x,
-            ndim=len(patch_creation.img_layer.value.data.shape),
-        )
-        for x in shapes
-    ]
-    from PIL import Image
+    if "2dselection" in viewer.layers:
+        selection_layer = viewer.layers["2dselection"]
+        shapes = selection_layer.data
+        patches = [
+            slice_img_patch(
+                patch_creation.img_layer.value.data,
+                x,
+                ndim=len(patch_creation.img_layer.value.data.shape),
+            )
+            for x in shapes
+        ]
+        from PIL import Image
 
-    for idx, patch in enumerate(patches):
-        im = Image.fromarray(patch)
-        im.save(str(store_path) + "/" + str(idx) + ".tif", format="TIFF")
+        for idx, patch in enumerate(patches):
+            im = Image.fromarray(patch)
+            im.save(str(store_path) + "/" + str(idx) + ".tif", format="TIFF")
 
 
 @patch_creation.active.changed.connect
 def start_stop_selection(state):
+    """
+    Function to start the selection. It creates the highlight and 2dselection
+    shape layers if they don't already exist.
+    It adds and removes the mouse events for drawing and creating patches.
+
+    :param state:
+    :return:
+    """
     viewer = napari.current_viewer()
     if "highlight" not in viewer.layers:
         highlight_layer = viewer.add_shapes(name="highlight")
@@ -76,6 +85,13 @@ def start_stop_selection(state):
 
 
 def create_patch(layer, event):
+    """
+    Creates and adds a rectangle in the shapes layer called "2dselection"
+
+    :param layer: the currently selected layer
+    :param event: the event that triggered this event
+    :return: None
+    """
     if event.type == "mouse_press" and event.button == 1:
         viewer = napari.current_viewer()
         cords = np.round(layer.world_to_data(viewer.cursor.position)).astype(
@@ -96,7 +112,18 @@ def create_patch(layer, event):
         )
 
 
-def create_rectangle(cords, patch_size, img_layer_shape, cursor_pos):
+def create_rectangle(
+    cords, patch_size: int, img_layer_shape, cursor_pos
+) -> np.array:
+    """
+    Creates a rectangle with a given patch size around the cursor position.
+
+    :param cords: the cursor coordinates in data space
+    :param patch_size: the edge length of the patch
+    :param img_layer_shape: the img layer shape
+    :param cursor_pos: the current cursor position in world space
+    :return:
+    """
     upper_left = cords - (patch_size / 2)
     upper_right = copy(upper_left)
     upper_right[0] += patch_size
@@ -111,7 +138,16 @@ def create_rectangle(cords, patch_size, img_layer_shape, cursor_pos):
     return rectangle
 
 
-def draw_square(layer, event):
+def draw_square(layer, event) -> None:
+    """
+    Draws a square around the cursor position with the
+    edge lengths specified in the widget.
+    The drawn square is first sanitized to be in-bound of the image.
+
+    :param layer: a napari layer, usually an image layer
+    :param event: unused
+    :return:
+    """
     viewer = napari.current_viewer()
     cords = np.round(layer.world_to_data(viewer.cursor.position)).astype(int)
     upper_left = cords - (patch_creation.patch_size.value / 2)
@@ -132,7 +168,19 @@ def draw_square(layer, event):
     )
 
 
-def sanitize_rectangle(rect: np.array, layer_shape: tuple, edge_length: int):
+def sanitize_rectangle(
+    rect: np.array, layer_shape: tuple, edge_length: int
+) -> np.array:
+    """
+    Function to check each vertex of the rectangle and
+    moves the vertices in-bounds of the images if
+    they are out of bounds.
+
+    :param rect: the rectangle to sanitize
+    :param layer_shape: shape of the current layer
+    :param edge_length: the length of the rectangles edge
+    :return:
+    """
     shape_array = np.array(layer_shape)
     y_dim = len(shape_array) - 1
     x_dim = len(shape_array) - 2
@@ -176,7 +224,22 @@ def sanitize_rectangle(rect: np.array, layer_shape: tuple, edge_length: int):
     return rect
 
 
-def sanitize_vertex(vertex, low_a, high_a, low_b, high_b):
+def sanitize_vertex(
+    vertex: np.array, low_a: int, high_a: int, low_b: int, high_b: int
+) -> np.array:
+    """
+    Takes a single point in 2D space and makes sure that the
+    values are in the allowed range and if not, sets the value
+    to the smallest or highest possible value.
+    It's used to draw the mouse-following square.
+
+    :param vertex: a 2D point
+    :param low_a: the lower limit for the first value
+    :param high_a: the upper limit for the first value
+    :param low_b: the lower limit for the second value
+    :param high_b: the upper limit for the second value
+    :return: the in-bounds vertex
+    """
     vertex[0] = np.where(vertex[0] < low_a, low_a, vertex[0])
     vertex[0] = np.where(vertex[0] > high_a, high_a, vertex[0])
     vertex[1] = np.where(vertex[1] < low_b, low_b, vertex[1])
@@ -184,7 +247,16 @@ def sanitize_vertex(vertex, low_a, high_a, low_b, high_b):
     return vertex
 
 
-def slice_img_patch(data, rectangle, ndim: int):
+def slice_img_patch(
+    data: np.array, rectangle: np.array, ndim: int
+) -> np.array:
+    """
+    :param data: the image to slice the patch from
+    :param rectangle: the patch with its vertices
+    :param ndim: the dimension of the image,
+    changes the selected values of the rectangle.
+    :return: the sliced out patch
+    """
     if ndim == 3:
         ixgrid = np.ix_(
             np.arange(rectangle[0][1], rectangle[1][1], dtype=int),
