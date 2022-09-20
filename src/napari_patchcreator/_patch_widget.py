@@ -305,16 +305,16 @@ class PatchWidget(QWidget):
         """
         if ndim == 3:
             ixgrid = np.ix_(
-                np.arange(rectangle[0][1], rectangle[1][1], dtype=int),
-                np.arange(rectangle[0][2], rectangle[2][2], dtype=int),
+                np.arange(rectangle[0][1], rectangle[1][2], dtype=int),
+                np.arange(rectangle[3][2], rectangle[2][1], dtype=int),
             )
             ixgrid = (int(rectangle[0][0]),) + ixgrid
             img = data[ixgrid]
             return img
         if ndim == 2:
             ixgrid = np.ix_(
-                np.arange(rectangle[0][0], rectangle[1][0], dtype=int),
-                np.arange(rectangle[0][1], rectangle[2][1], dtype=int),
+                np.arange(rectangle[0][0], rectangle[1][1], dtype=int),
+                np.arange(rectangle[3][1], rectangle[2][0], dtype=int),
             )
             img = data[ixgrid]
             return img
